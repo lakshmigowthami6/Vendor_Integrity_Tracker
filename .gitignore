@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IPynb checkpoints
+.ipynb_checkpoints/
+
+# Database files (400MB+ inventory.db exceeds GitHub limits)
+data/inventory.db
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS specific files
+.DS_Store
+Thumbs.db
