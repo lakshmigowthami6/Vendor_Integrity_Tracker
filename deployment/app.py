@@ -29,25 +29,17 @@ st.markdown("""
         margin-bottom: 0.2rem;
     }
     .subtitle { color: #64748b; font-size: 1.1rem; margin-bottom: 1.5rem; }
-    .manual-approval-banner {
-        padding: 1.2rem; border-radius: 8px;
-        background-color: #3b1d20; /* Dark red */
-        border: 1px solid #7d262b;
-        color: #fca5a5; /* Light red text */
-        font-weight: 600;
-        font-size: 1.1rem;
-        margin-top: 1rem;
-        text-align: left;
+    .flagged-banner {
+        padding: 1rem; border-radius: 12px;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #f87171; font-weight: 600;
     }
-    .approved-banner {
-        padding: 1.2rem; border-radius: 8px;
-        background-color: #1b3b22; /* Dark green */
-        border: 1px solid #267d3d;
-        color: #a7f3d0; /* Light green text */
-        font-weight: 600;
-        font-size: 1.1rem;
-        margin-top: 1rem;
-        text-align: left;
+    .normal-banner {
+        padding: 1rem; border-radius: 12px;
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        color: #4ade80; font-weight: 600;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -79,7 +71,7 @@ except Exception as e:
 st.sidebar.markdown("<h2 style='text-align:center;color:#6366f1;font-weight:700;'>NAVIGATOR</h2>", unsafe_allow_html=True)
 page = st.sidebar.radio(
     "Go to page:",
-    ["🚨 Invoice Manual Approval Prediction", "🚚 Freight Cost Estimator", "🔎 Database Explorer"]
+    ["🛡️ Invoice Flagging Tool", "🚚 Freight Cost Estimator", "🔎 Database Explorer"]
 )
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
@@ -89,37 +81,34 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Page 1 – Invoice Manual Approval Prediction
+# Page 1 – Invoice Flagging Tool
 # ─────────────────────────────────────────────────────────────────────────────
-if page == "🚨 Invoice Manual Approval Prediction":
-    st.markdown("## 🚨 Invoice Manual Approval Prediction")
-    st.markdown("**Objective**: Predict whether a vendor invoice should be flagged for manual approval based on abnormal cost, freight, or delivery patterns.")
-    st.markdown("")
+if page == "🛡️ Invoice Flagging Tool":
+    st.markdown("<div class='title-gradient'>Invoice Flagging Tool</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtitle'>Evaluate invoice risk using ML Classification models alongside exact business rules</div>", unsafe_allow_html=True)
 
-    # Wrap inputs in a bordered container
-    with st.container(border=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            invoice_quantity = st.number_input("📦 Invoice Quantity", min_value=1, value=50)
-        with col2:
-            invoice_dollars = st.number_input("💰 Invoice Dollars", min_value=0.0, value=352.95, step=10.0)
-        with col3:
-            total_item_dollars = st.number_input("💵 Total Item Dollars", min_value=0.0, value=2476.00, step=10.0)
+    st.markdown("""
+    > **Transparency Notice**: This tool runs the **Random Forest** ML model AND compares it against the exact business rule.  
+    > An invoice is flagged if billing differs from internal item totals by **> $5** or average receiving delay exceeds **10 days**.
+    """)
 
-        col4, col5, _ = st.columns([1, 1, 1])
-        with col4:
-            freight = st.number_input("🚚 Freight Cost", min_value=0.0, value=1.73, step=0.1)
-        with col5:
-            total_item_quantity = st.number_input("🛒 Total Item Quantity", min_value=1, value=162)
+    st.markdown("#### 📝 Invoice Specifications")
+    invoice_quantity   = st.number_input("Invoice Quantity",          min_value=1,   value=15)
+    invoice_dollars    = st.number_input("Invoice Dollars ($)",       min_value=0.0, value=250.0, step=10.0)
+    total_item_dollars = st.number_input("Actual Items Dollars ($)",  min_value=0.0, value=248.5, step=10.0)
+    freight            = st.number_input("Freight Charge ($)",        min_value=0.0, value=12.5,  step=1.0)
 
-        st.markdown("")
-        evaluate_clicked = st.button("⚖️ Evaluate Invoice Risk")
+    # Hidden defaults for remaining model features
+    days_po_to_invoice  = 5
+    total_brands        = 2
+    total_item_quantity = invoice_quantity
+    avg_receiving_delay = 4.5
 
-    if evaluate_clicked:
-        # Hidden defaults for remaining model features
-        days_po_to_invoice  = 5
-        total_brands        = 2
-        avg_receiving_delay = 4.5
+    st.markdown("---")
+
+    if st.button("🛡️ Run Risk Assessment"):
+        dollar_diff  = abs(invoice_dollars - total_item_dollars)
+        rule_flagged = (dollar_diff > 5) or (avg_receiving_delay > 10)
 
         input_data = pd.DataFrame([[
             invoice_quantity, invoice_dollars, freight,
@@ -130,15 +119,32 @@ if page == "🚨 Invoice Manual Approval Prediction":
             'days_po_to_invoice', 'total_brands',
             'total_item_quantity', 'total_item_dollars', 'avg_receiving_delay'
         ])
-        
         input_scaled  = flag_scaler.transform(input_data)
         ml_prediction = flag_model.predict(input_scaled)[0]
+        ml_proba      = flag_model.predict_proba(input_scaled)[0][1]
 
-        # Display result matching the red/green banner styling
-        if ml_prediction == 1:
-            st.markdown("<div class='manual-approval-banner'>Invoice requires MANUAL APPROVAL</div>", unsafe_allow_html=True)
-        else:
-            st.markdown("<div class='approved-banner'>Invoice is APPROVED</div>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("#### 🤖 Machine Learning Model (Random Forest)")
+            if ml_prediction == 1:
+                st.markdown(f"<div class='flagged-banner'>⚠️ FLAGGED ANOMALY (Risk: {ml_proba*100:.1f}%)</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='normal-banner'>✅ NORMAL INVOICE (Risk: {ml_proba*100:.1f}%)</div>", unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("#### ⚖️ Exact Business Rule")
+            if rule_flagged:
+                reasons = []
+                if dollar_diff > 5:
+                    reasons.append(f"Price discrepancy ${dollar_diff:.2f} > $5")
+                if avg_receiving_delay > 10:
+                    reasons.append(f"Delay {avg_receiving_delay:.1f} days > 10")
+                st.markdown(f"<div class='flagged-banner'>⚠️ FLAGGED — {', '.join(reasons)}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown("<div class='normal-banner'>✅ NORMAL — All specs within healthy thresholds.</div>", unsafe_allow_html=True)
+
+        if ml_prediction != rule_flagged:
+            st.warning("⚠️ Model and rule disagree. For production audits, use the rule-based check (100% precision).")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Page 2 – Freight Cost Estimator
