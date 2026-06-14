@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 def train_and_save_models():
     # Define paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.abspath(os.path.join(base_dir, "data", "inventory.db"))
+    db_path = os.path.abspath(os.path.join(base_dir, "..", "data", "inventory.db"))
     models_dir = os.path.join(base_dir, "models")
     
     os.makedirs(models_dir, exist_ok=True)
@@ -35,8 +35,8 @@ def train_and_save_models():
         sum(p.Dollars) as total_item_dollars,
         avg(julianday(p.ReceivingDate)-julianday(p.PODate)) as avg_receiving_delay   
        from purchases p group by p.PONumber
-     )
-     select
+    )
+    select
         vi.PONumber,
         vi.Quantity as invoice_quantity, 
         vi.Dollars as invoice_dollars, vi.Freight, 

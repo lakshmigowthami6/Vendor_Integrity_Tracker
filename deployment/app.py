@@ -44,10 +44,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Paths (pointing to root data and models directories) ──────────────────────────
+# ── Paths (pointing to root data and deployment/models directories) ──────────────────
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 DB_PATH    = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "sample_inventory.db"))
-MODELS_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "models"))
+MODELS_DIR = os.path.abspath(os.path.join(BASE_DIR, "models"))
 
 # ── DB helper ──────────────────────────────────────────────────────────────────
 def get_conn():
