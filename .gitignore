@@ -17,3 +17,6 @@ env/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Hugging Face deployment sub-repository
+hf_deployment/
